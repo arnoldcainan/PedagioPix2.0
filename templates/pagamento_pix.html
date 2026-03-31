@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-5">
+        
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="bg-success text-white text-center py-3">
+                <i class="fa-solid fa-circle-check fa-3x mb-2"></i>
+                <h3 class="fw-bold mb-0">Cobrança Gerada!</h3>
+            </div>
+
+            <div class="card-body p-4 p-md-5 text-center">
+                
+                <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded-3 mb-4 border">
+                    <div>
+                        <small class="text-muted d-block fw-bold text-uppercase">Placa</small>
+                        <span class="fs-4 fw-bold text-dark">{{ qr_code.placa }}</span>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted d-block fw-bold text-uppercase">Valor</small>
+                        <span class="fs-4 fw-bold text-success">R$ {{ qr_code.valor }},00</span>
+                    </div>
+                </div>
+
+                <p class="text-muted mb-2">Escaneie o QR Code abaixo com o app do seu banco:</p>
+                <div class="bg-white p-2 rounded-4 border d-inline-block mb-4 shadow-sm">
+                    <img src="data:image/png;base64,{{ qr_code.encodedImage }}" alt="QR Code PIX" class="img-fluid" style="max-width: 250px; border-radius: 8px;">
+                </div>
+
+                <div class="text-danger small fw-bold mb-4">
+                    <i class="fa-regular fa-clock me-1"></i> Expira em: {{ qr_code.expirationDate }}
+                </div>
+
+                <div class="text-start mb-4">
+                    <label class="form-label fw-bold text-muted small text-uppercase">PIX Copia e Cola</label>
+                    <div class="input-group input-group-lg shadow-sm">
+                        <input type="text" id="pixPayload" class="form-control text-muted bg-white" value="{{ qr_code.payload }}" readonly style="font-family: monospace; font-size: 0.85rem;">
+                        <button class="btn btn-primary px-4" type="button" id="btnCopiar" onclick="copiarPix()">
+                            <i class="fa-regular fa-copy me-2" id="copyIcon"></i> <span id="copyText">Copiar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <a href="{% url 'gerar_cobranca_pix' %}" class="btn btn-light btn-lg w-100 rounded-pill fw-bold border text-secondary hover-bg-gray transition-all">
+                    <i class="fa-solid fa-arrow-left me-2"></i> Nova Cobrança
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function copiarPix() {
+        // Pega o input contendo o payload
+        var pixInput = document.getElementById("pixPayload");
+        var btn = document.getElementById("btnCopiar");
+        var copyIcon = document.getElementById("copyIcon");
+        var copyText = document.getElementById("copyText");
+
+        // Seleciona e copia o texto usando a API moderna da área de transferência
+        navigator.clipboard.writeText(pixInput.value).then(function() {
+            // Feedback visual de sucesso
+            btn.classList.remove("btn-primary");
+            btn.classList.add("btn-success");
+            copyIcon.classList.remove("fa-copy");
+            copyIcon.classList.add("fa-check");
+            copyText.innerText = "Copiado!";
+            
+            // Retorna ao estado original após 3 segundos
+            setTimeout(function() {
+                btn.classList.remove("btn-success");
+                btn.classList.add("btn-primary");
+                copyIcon.classList.remove("fa-check");
+                copyIcon.classList.add("fa-copy");
+                copyText.innerText = "Copiar";
+            }, 3000);
+        }).catch(function(err) {
+            console.error('Erro ao copiar texto: ', err);
+            alert("Não foi possível copiar o código. Tente selecionar o texto manualmente.");
+        });
+    }
+</script>
+{% endblock %}

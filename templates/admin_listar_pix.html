@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+    <div class="mb-3 mb-md-0">
+        <h2 class="fw-bold mb-1 text-dark">Histórico de Operações PIX</h2>
+        <p class="text-muted mb-0">Acompanhe e gerencie as cobranças geradas no sistema.</p>
+    </div>
+    <div>
+        <a href="{% url 'gerar_cobranca_pix' %}" class="btn btn-primary rounded-pill shadow-sm px-4 fw-bold w-100">
+            <i class="fa-solid fa-plus me-2"></i> Nova Cobrança
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for pix in pix_list %}
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 rounded-4 transition-hover">
+            <div class="card-body p-4">
+
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <span class="badge bg-light text-dark border px-2 py-1 mb-2 text-uppercase font-monospace fs-6">
+                            <i class="fa-solid fa-car-side me-1 text-muted"></i> {{ pix.passagem.placa }}
+                        </span>
+                        <h3 class="fw-bold text-success mb-0">R$ {{ pix.passagem.valor }}</h3>
+                    </div>
+                    <div class="text-end">
+                        {% if pix.pago %}
+                            <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm"><i class="fa-solid fa-check me-1"></i> Pago</span>
+                        {% elif pix.is_expired %}
+                            <span class="badge bg-danger rounded-pill px-3 py-2 shadow-sm"><i class="fa-solid fa-xmark me-1"></i> Expirado</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-2 shadow-sm"><i class="fa-solid fa-clock me-1"></i> Pendente</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="text-muted opacity-25">
+
+                <div class="small text-muted mb-2">
+                    <strong>TXID:</strong>
+                    <span class="font-monospace user-select-all" title="{{ pix.txid }}">{{ pix.txid|truncatechars:20 }}</span>
+                </div>
+                <div class="small text-muted mb-2">
+                    <i class="fa-regular fa-calendar-plus me-1"></i> <strong>Criado:</strong> {{ pix.data_criacao|date:"d/m/Y H:i" }}
+                </div>
+                <div class="small text-muted">
+                    <i class="fa-regular fa-calendar-xmark me-1"></i> <strong>Expira:</strong> {{ pix.data_expiracao|date:"d/m/Y H:i" }}
+                </div>
+
+            </div>
+
+            {% if not pix.pago and not pix.is_expired %}
+            <div class="card-footer bg-transparent border-0 p-3 pt-0">
+                <button class="btn btn-outline-primary w-100 rounded-pill btn-sm fw-bold" type="button" data-bs-toggle="modal" data-bs-target="#modalQr{{ pix.id }}">
+                    <i class="fa-solid fa-qrcode me-1"></i> Exibir QR Code
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not pix.pago and not pix.is_expired %}
+    <div class="modal fade" id="modalQr{{ pix.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">QR Code PIX</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center pb-4">
+                    <div class="mb-3">
+                        <span class="fs-5 fw-bold text-dark d-block text-uppercase border bg-light rounded-3 py-1">{{ pix.passagem.placa }}</span>
+                        <span class="text-success fw-bold fs-4">R$ {{ pix.passagem.valor }}</span>
+                    </div>
+                    <img src="data:image/png;base64,{{ pix.qr_code_base64 }}" alt="QR Code" class="img-fluid rounded-3 border p-2 mb-3 shadow-sm" style="max-width: 200px;">
+                    <p class="small text-muted mb-0"><i class="fa-solid fa-circle-notch fa-spin text-primary me-1"></i> Aguardando pagamento pelo motorista...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% empty %}
+    <div class="col-12 text-center py-5 mt-5">
+        <div class="text-muted opacity-50 mb-3">
+            <i class="fa-solid fa-receipt fa-5x"></i>
+        </div>
+        <h4 class="fw-bold text-secondary">Nenhuma cobrança registrada</h4>
+        <p class="text-muted">As cobranças de pedágio geradas aparecerão aqui.</p>
+        <a href="{% url 'gerar_cobranca_pix' %}" class="btn btn-outline-primary rounded-pill mt-2 fw-bold">Criar Primeira Cobrança</a>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    /* Efeito de elevação suave ao passar o mouse sobre o card */
+    .transition-hover {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .transition-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+    }
+    /* Permite selecionar o texto do TXID com facilidade */
+    .user-select-all {
+        user-select: all;
+    }
+</style>
+{% endblock %}

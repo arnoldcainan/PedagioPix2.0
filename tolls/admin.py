@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Passagem, CobrancaPix
+from .models import Passagem, CobrancaPix, CategoriaTarifa
+
+@admin.register(CategoriaTarifa)
+class CategoriaTarifaAdmin(admin.ModelAdmin):
+    list_display = ('codigo', 'descricao', 'tipo_cobranca', 'valor_base', 'ativo')
+    list_editable = ('valor_base', 'ativo') # Permite editar o valor direto na listagem!
+    search_fields = ('codigo', 'descricao')
 
 @admin.register(Passagem)
 class PassagemAdmin(admin.ModelAdmin):

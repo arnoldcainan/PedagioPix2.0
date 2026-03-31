@@ -1,21 +1,36 @@
 from django.db import models
 from django.utils import timezone
 
+class TipoCobranca(models.TextChoices):
+    FIXA = 'FIXA', 'Tarifa Fixa'
+    POR_EIXO = 'POR_EIXO', 'Multiplicado por Eixo'
 
-class CategoriaVeiculo(models.TextChoices):
-    MOTO = 'MOTO', 'Moto'
-    CARRO = 'CARRO', 'Carro'
-    CAMINHAO = 'CAMINHAO', 'Caminhão'
+class CategoriaTarifa(models.Model):
+    codigo = models.CharField(max_length=10, unique=True, verbose_name="Cód. (Ex: CAT 1)")
+    descricao = models.CharField(max_length=100, verbose_name="Descrição (Ex: Passeio)",blank=True, null=True)
+    tipo_cobranca = models.CharField(max_length=10, choices=TipoCobranca.choices, default=TipoCobranca.FIXA)
+    valor_base = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Valor Base (R$)")
+    icone = models.CharField(max_length=50, default="fa-solid fa-car", help_text="Classe do FontAwesome")
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Categoria de Tarifa"
+        verbose_name_plural = "Categorias de Tarifas"
+        ordering = ['id']
+
+    def __str__(self):
+        return f"{self.codigo} - {self.descricao} (R$ {self.valor_base})"
 
 
 class Passagem(models.Model):
-    # O id (Primary Key) é criado automaticamente pelo Django
     placa = models.CharField(max_length=7, verbose_name="Placa do Veículo")
-    categoria = models.CharField(
-        max_length=10,
-        choices=CategoriaVeiculo.choices,
-        verbose_name="Categoria"
-    )
+
+    # A categoria agora é uma chave estrangeira apontando para a nova tabela
+    categoria = models.ForeignKey(CategoriaTarifa, on_delete=models.PROTECT, verbose_name="Categoria")
+
+    # Campo extra para registrar quantos eixos foram cobrados na CAT 15
+    eixos_cobrados = models.IntegerField(default=1, verbose_name="Eixos Cobrados")
+
     valor = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Valor Cobrado")
     data_registro = models.DateTimeField(auto_now_add=True, verbose_name="Data da Passagem")
 
@@ -25,7 +40,7 @@ class Passagem(models.Model):
         ordering = ['-data_registro']
 
     def __str__(self):
-        return f"{self.placa} - {self.get_categoria_display()} (R$ {self.valor})"
+        return f"{self.placa} - {self.categoria.codigo} (R$ {self.valor})"
 
 
 class CobrancaPix(models.Model):
