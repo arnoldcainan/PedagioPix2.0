@@ -10,52 +10,58 @@ import re
 
 @login_required
 def gerar_cobranca_pix(request):
-    # Pega todas as categorias ativas no banco para desenhar a tela
     categorias = CategoriaTarifa.objects.filter(ativo=True).order_by('id')
+
+    # Identifica o valor do eixo avulso para calcular o desconto (CAT 15)
+    categoria_eixo = categorias.filter(tipo_cobranca='POR_EIXO').first()
+    valor_eixo_suspenso = categoria_eixo.valor_base if categoria_eixo else Decimal('8.40')
 
     if request.method == 'POST':
         placa = request.POST.get('placa')
         categoria_id = request.POST.get('categoria_id')
+
+        # Captura os dois tipos de inputs da tela
         qtd_eixos = int(request.POST.get('qtd_eixos', 1))
+        eixos_suspensos = int(request.POST.get('eixos_suspensos', 0))
 
         if not placa or not categoria_id:
             messages.error(request, 'Placa e Categoria são obrigatórios.')
             return redirect('gerar_cobranca_pix')
 
         placa_formatada = placa.upper().strip()
-
-        # Validação Regex de Placa
         padrao_placa = re.compile(r'^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$')
         if not padrao_placa.match(placa_formatada):
-            messages.error(request, f'A placa "{placa}" é inválida. Use o formato ABC1234 ou ABC1D23.')
+            messages.error(request, f'A placa "{placa}" é inválida.')
             return redirect('gerar_cobranca_pix')
 
-        # Busca a categoria selecionada no banco
         try:
             categoria = CategoriaTarifa.objects.get(id=categoria_id)
         except CategoriaTarifa.DoesNotExist:
-            messages.error(request, 'Categoria não encontrada no sistema.')
+            messages.error(request, 'Categoria não encontrada.')
             return redirect('gerar_cobranca_pix')
 
         # =========================================================
-        # MOTOR DE CÁLCULO DINÂMICO
-        # Se for CAT 15 (POR EIXO), multiplica. Se for normal, pega o base.
+        # MOTOR DE CÁLCULO DINÂMICO (Com Eixo Suspenso)
+        # =========================================================
         if categoria.tipo_cobranca == 'POR_EIXO':
             valor_final = categoria.valor_base * qtd_eixos
+            eixos_cobrados_reais = qtd_eixos
         else:
-            valor_final = categoria.valor_base
-            qtd_eixos = 1  # Categoria normal conta como "1 passagem"
+            # Calcula o desconto baseado em quantos eixos foram suspensos
+            valor_desconto = Decimal(str(eixos_suspensos)) * valor_eixo_suspenso
+            valor_final = categoria.valor_base - valor_desconto
+
+            # Estima quantos eixos foram efetivamente cobrados para o relatório
+            eixos_base_estimados = int(categoria.valor_base / valor_eixo_suspenso)
+            eixos_cobrados_reais = eixos_base_estimados - eixos_suspensos if eixos_base_estimados > 0 else 1
         # =========================================================
 
-        # Trava de Idempotência (Agora buscando pela Foreign Key)
         pix_existente = CobrancaPix.objects.filter(
-            passagem__placa=placa_formatada,
-            pago=False,
-            data_expiracao__gt=timezone.now()
+            passagem__placa=placa_formatada, pago=False, data_expiracao__gt=timezone.now()
         ).first()
 
         if pix_existente:
-            messages.info(request, f'Já existe uma cobrança ativa para a placa {placa_formatada}.')
+            messages.info(request, f'Cobrança ativa encontrada para {placa_formatada}.')
             context = {
                 'qr_code': {
                     'encodedImage': pix_existente.qr_code_base64,
@@ -72,7 +78,7 @@ def gerar_cobranca_pix(request):
                 passagem = Passagem.objects.create(
                     placa=placa_formatada,
                     categoria=categoria,
-                    eixos_cobrados=qtd_eixos,
+                    eixos_cobrados=eixos_cobrados_reais,  # Salva a quantidade real reduzida!
                     valor=valor_final
                 )
 
@@ -96,15 +102,17 @@ def gerar_cobranca_pix(request):
                     'valor': valor_final
                 }
             }
-            messages.success(request, 'Nova cobrança gerada com sucesso!')
             return render(request, 'pagamento_pix.html', context)
 
         except Exception as e:
             messages.error(request, f'Erro ao processar cobrança: {str(e)}')
             return redirect('gerar_cobranca_pix')
 
-    # Para requisições GET, envia as categorias pro HTML desenhar os botões
-    return render(request, 'admin_cobranca_pix.html', {'categorias': categorias})
+    # Passamos o valor do eixo para o JavaScript usar na tela
+    return render(request, 'admin_cobranca_pix.html', {
+        'categorias': categorias,
+        'valor_eixo_suspenso': valor_eixo_suspenso
+    })
 
 
 @login_required

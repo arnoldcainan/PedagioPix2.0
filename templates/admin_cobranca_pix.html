@@ -2,8 +2,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-12 col-md-8 col-lg-6">
-
+    <div class="col-12 col-md-10 col-lg-8">
         <div class="card border-0 shadow-lg rounded-4">
             <div class="card-body p-4 p-md-5">
                 <div class="text-center mb-4">
@@ -17,11 +16,9 @@
                     <div class="form-floating mb-4">
                         <input type="text" name="placa" id="placa"
                                class="form-control form-control-lg text-uppercase fw-bold"
-                               placeholder="ABC1D23"
-                               maxlength="7" minlength="7"
+                               placeholder="ABC1D23" maxlength="7" minlength="7"
                                pattern="[A-Za-z]{3}[0-9][A-Za-z0-9][0-9]{2}"
-                               required autocomplete="off"
-                               style="font-size: 1.5rem; letter-spacing: 2px;">
+                               required autocomplete="off" style="font-size: 1.5rem; letter-spacing: 2px;">
                         <label for="placa">Placa do Veículo</label>
                     </div>
 
@@ -45,15 +42,27 @@
                         {% endfor %}
                     </div>
 
-                    <div id="div-eixos" class="mb-4 p-3 bg-light rounded-4 border d-none transition-all">
+                    <div id="div-eixos-totais" class="mb-4 p-3 bg-light rounded-4 border d-none transition-all">
                         <label for="qtd_eixos" class="form-label fw-bold text-primary">
-                            <i class="fa-solid fa-truck-moving me-2"></i>Informe a quantidade de eixos da composição:
+                            <i class="fa-solid fa-truck-moving me-2"></i>Quantidade Total de Eixos:
                         </label>
                         <div class="input-group input-group-lg">
-                            <button class="btn btn-outline-secondary px-4 fw-bold" type="button" onclick="mudarEixo(-1)">-</button>
+                            <button class="btn btn-outline-secondary px-4 fw-bold" type="button" onclick="mudarEixo('totais', -1)">-</button>
                             <input type="number" class="form-control text-center fw-bold text-primary fs-4" name="qtd_eixos" id="qtd_eixos" value="1" min="1" max="20" readonly>
-                            <button class="btn btn-outline-secondary px-4 fw-bold" type="button" onclick="mudarEixo(1)">+</button>
+                            <button class="btn btn-outline-secondary px-4 fw-bold" type="button" onclick="mudarEixo('totais', 1)">+</button>
                         </div>
+                    </div>
+
+                    <div id="div-eixos-suspensos" class="mb-4 p-3 bg-light rounded-4 border border-warning d-none transition-all">
+                        <label for="eixos_suspensos" class="form-label fw-bold text-warning-emphasis">
+                            <i class="fa-solid fa-arrow-up-from-bracket me-2"></i>Eixos Suspensos (Isentos):
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <button class="btn btn-outline-warning text-dark px-4 fw-bold border-warning" type="button" onclick="mudarEixo('suspensos', -1)">-</button>
+                            <input type="number" class="form-control text-center fw-bold text-warning-emphasis fs-4 border-warning" name="eixos_suspensos" id="eixos_suspensos" value="0" min="0" readonly>
+                            <button class="btn btn-outline-warning text-dark px-4 fw-bold border-warning" type="button" onclick="mudarEixo('suspensos', 1)">+</button>
+                        </div>
+                        <div class="form-text fw-semibold text-muted mt-2" id="texto-max-suspensos"></div>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold py-3 shadow-sm" id="btnGerar">
@@ -64,87 +73,75 @@
         </div>
     </div>
 </div>
-
-<style>
-    /* Estilização customizada para os cards de seleção */
-    .custom-radio-card {
-        transition: all 0.2s ease-in-out;
-        border: 2px solid #E5E7EB;
-        color: var(--text-main);
-    }
-    .custom-radio-card i {
-        color: var(--text-muted);
-        transition: color 0.2s;
-    }
-    .custom-radio-card:hover {
-        background-color: #F3F4F6;
-        border-color: #D1D5DB;
-    }
-    .btn-check:checked + .custom-radio-card {
-        background-color: #EEF2FF; /* Fundo levemente azulado */
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-    }
-    .btn-check:checked + .custom-radio-card i,
-    .btn-check:checked + .custom-radio-card .text-muted {
-        color: var(--primary-color) !important;
-    }
-</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Filtro de placa
     document.getElementById('placa').addEventListener('input', function(e) {
         this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     });
 
-    // Lógica Dinâmica para a Categoria Especial
     const radios = document.querySelectorAll('.categoria-radio');
-    const divEixos = document.getElementById('div-eixos');
-    const inputEixos = document.getElementById('qtd_eixos');
-    const labelValor = document.getElementById('label-valor');
     let valorBaseAtual = 0;
     let tipoAtual = '';
+    const valorEixoSuspenso = parseFloat("{{ valor_eixo_suspenso|stringformat:'f' }}".replace(',', '.'));
+    let maxSuspensosPermitido = 0;
 
     radios.forEach(radio => {
         radio.addEventListener('change', function() {
             tipoAtual = this.getAttribute('data-tipo');
             valorBaseAtual = parseFloat(this.getAttribute('data-valor'));
 
+            document.getElementById('qtd_eixos').value = 1;
+            document.getElementById('eixos_suspensos').value = 0;
+
             if (tipoAtual === 'POR_EIXO') {
-                // É a CAT 15, exibe os botões de eixos
-                divEixos.classList.remove('d-none');
-                inputEixos.value = 1; // Reseta para 1
+                document.getElementById('div-eixos-totais').classList.remove('d-none');
+                document.getElementById('div-eixos-suspensos').classList.add('d-none');
             } else {
-                // Categoria normal, esconde os botões
-                divEixos.classList.add('d-none');
+                document.getElementById('div-eixos-totais').classList.add('d-none');
+
+                let eixosBase = Math.round(valorBaseAtual / valorEixoSuspenso);
+
+                if (eixosBase > 2) {
+                    maxSuspensosPermitido = eixosBase - 2;
+                    document.getElementById('div-eixos-suspensos').classList.remove('d-none');
+                    document.getElementById('texto-max-suspensos').innerText =
+                        "Caminhão de " + eixosBase + " eixos. Máximo isento permitido: " + maxSuspensosPermitido + ". (Mínimo de 2 eixos cobrados).";
+                } else {
+                    document.getElementById('div-eixos-suspensos').classList.add('d-none');
+                }
             }
             atualizarBotao();
         });
     });
 
-    // Função dos botões + e -
-    function mudarEixo(valor) {
-        let atual = parseInt(inputEixos.value);
-        let novo = atual + valor;
-        if (novo >= 1 && novo <= 20) {
-            inputEixos.value = novo;
-            atualizarBotao();
+    function mudarEixo(tipo, incremento) {
+        if (tipo === 'totais') {
+            let input = document.getElementById('qtd_eixos');
+            let novo = parseInt(input.value) + incremento;
+            if (novo >= 1 && novo <= 20) input.value = novo;
+        } else if (tipo === 'suspensos') {
+            let input = document.getElementById('eixos_suspensos');
+            let novo = parseInt(input.value) + incremento;
+            if (novo >= 0 && novo <= maxSuspensosPermitido) input.value = novo;
         }
+        atualizarBotao();
     }
 
-    // Calcula o valor final e exibe no botão de gerar
     function atualizarBotao() {
         let total = valorBaseAtual;
+
         if (tipoAtual === 'POR_EIXO') {
-            total = valorBaseAtual * parseInt(inputEixos.value);
+            total = valorBaseAtual * parseInt(document.getElementById('qtd_eixos').value);
+        } else {
+            let isentos = parseInt(document.getElementById('eixos_suspensos').value);
+            total = valorBaseAtual - (isentos * valorEixoSuspenso);
         }
-        // Formata para moeda brasileira BRL
-        labelValor.innerText = "- R$ " + total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+
+        document.getElementById('label-valor').innerText = "- R$ " + total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
-    // Loading ao enviar
     document.querySelector('form').addEventListener('submit', function() {
         let btn = document.getElementById('btnGerar');
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Conectando ao Banco...';
