@@ -1,0 +1,20 @@
+# Ambientes Virtuais
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Django
+db.sqlite3
+*.log
+
+# Variáveis de Ambiente e Credenciais (MUITO IMPORTANTE)
+.env
+
+# Sistema Operacional (Mac/Windows)
+.DS_Store
+Thumbs.db
