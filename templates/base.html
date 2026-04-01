@@ -12,6 +12,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
     <style>
+        .hover-primary { transition: color 0.2s; }
+        .hover-primary:hover { color: var(--bs-primary) !important; }
+
         :root {
             --primary-color: #4F46E5; /* Indigo moderno */
             --primary-hover: #4338CA;
@@ -68,37 +71,57 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fa-solid fa-road-barrier me-2"></i>PedágioPIX
+            <a class="navbar-brand fw-bold" href="{% url 'home' %}">
+                <i class="fa-solid fa-road-barrier me-2 text-primary"></i>PedágioPIX
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
+                <ul class="navbar-nav ms-auto align-items-center mt-3 mt-lg-0">
                     {% if user.is_authenticated %}
-                        <li class="nav-item me-3">
-                            <a class="nav-link fw-semibold" href="{% url 'gerar_cobranca_pix' %}"><i class="fa-solid fa-qrcode me-1"></i> Nova Cobrança</a>
-                        </li>
-                        <li class="nav-item me-3">
-                            <a class="nav-link fw-semibold" href="{% url 'listar_pix' %}"><i class="fa-solid fa-list me-1"></i> Histórico</a>
+
+                        <li class="nav-item me-1 me-lg-3">
+                            <a class="nav-link fw-semibold text-dark hover-primary" href="{% url 'dashboard' %}">
+                                <i class="fa-solid fa-chart-pie me-1 text-primary"></i> Dashboard
+                            </a>
                         </li>
 
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle text-dark fw-bold border rounded-pill px-3 py-2 bg-light" href="#" role="button" data-bs-toggle="dropdown">
+                        <li class="nav-item me-1 me-lg-3">
+                            <a class="nav-link fw-semibold hover-primary" href="{% url 'gerar_cobranca_pix' %}">
+                                <i class="fa-solid fa-qrcode me-1"></i> Nova Cobrança
+                            </a>
+                        </li>
+                        <li class="nav-item me-1 me-lg-3">
+                            <a class="nav-link fw-semibold hover-primary" href="{% url 'listar_pix' %}">
+                                <i class="fa-solid fa-list-check me-1"></i> Pista
+                            </a>
+                        </li>
+
+                        <li class="nav-item me-1 me-lg-4 mb-3 mb-lg-0">
+                            <a class="nav-link fw-semibold hover-primary" href="{% url 'relatorio_financeiro' %}">
+                                <i class="fa-solid fa-file-invoice-dollar me-1 text-success"></i> Relatório
+                            </a>
+                        </li>
+
+                        <li class="nav-item dropdown w-100 w-lg-auto text-center text-lg-start">
+                            <a class="nav-link dropdown-toggle text-dark fw-bold border rounded-pill px-3 py-2 bg-light shadow-sm" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="fa-solid fa-circle-user text-primary me-1"></i> {{ user.username }}
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-4">
                                 <li>
                                     <form action="{% url 'logout' %}" method="post" class="m-0 p-0">
                                         {% csrf_token %}
-                                        <button type="submit" class="dropdown-item text-danger fw-semibold">
+                                        <button type="submit" class="dropdown-item text-danger fw-semibold py-2">
                                             <i class="fa-solid fa-right-from-bracket me-2"></i> Sair do Sistema
                                         </button>
                                     </form>
                                 </li>
                             </ul>
                         </li>
+
                     {% endif %}
                 </ul>
             </div>

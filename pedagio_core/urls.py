@@ -15,4 +15,5 @@ urlpatterns = [
 
     # Rota Raiz (Home) - Geralmente vinculada ao app principal ou Dashboard
     path('', home, name='home'),
+
 ]

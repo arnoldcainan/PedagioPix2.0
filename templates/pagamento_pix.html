@@ -12,14 +12,14 @@
 
             <div class="card-body p-4 p-md-5 text-center">
                 
-                <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded-3 mb-4 border">
+                <div class="mb-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <small class="text-muted d-block fw-bold text-uppercase">Placa</small>
-                        <span class="fs-4 fw-bold text-dark">{{ qr_code.placa }}</span>
+                        <span class="text-muted small fw-bold d-block text-uppercase mb-1">PLACA</span>
+                        <span class="fs-4 fw-bold text-dark text-uppercase border bg-light rounded-3 px-3 py-1">{{ qr_code.placa }}</span>
                     </div>
                     <div class="text-end">
-                        <small class="text-muted d-block fw-bold text-uppercase">Valor</small>
-                        <span class="fs-4 fw-bold text-success">R$ {{ qr_code.valor }},00</span>
+                        <span class="text-muted small fw-bold d-block text-uppercase mb-1">VALOR</span>
+                        <span class="text-success fw-bold fs-3">R$ {{ qr_code.valor|floatformat:2 }}</span>
                     </div>
                 </div>
 

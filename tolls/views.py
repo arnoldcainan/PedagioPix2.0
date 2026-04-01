@@ -1,11 +1,18 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models.functions import TruncDate
+from django.db.models import Sum
+
+from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
+
 from .models import Passagem, CobrancaPix, CategoriaTarifa
 from .services import BancoBrasilPixService
 import re
+
+from decimal import Decimal
 
 
 @login_required
@@ -113,6 +120,65 @@ def gerar_cobranca_pix(request):
         'categorias': categorias,
         'valor_eixo_suspenso': valor_eixo_suspenso
     })
+
+
+@login_required
+def dashboard_gerencial(request):
+    agora = timezone.now()
+    sete_dias_atras = agora - timedelta(days=7)
+
+    # KPIs Básicos (Mantendo o que já tínhamos)
+    pagos = CobrancaPix.objects.filter(pago=True)
+    faturamento = pagos.aggregate(total=Sum('passagem__valor'))['total'] or 0.00
+    qtd_pagos = pagos.count()
+    qtd_evasoes = CobrancaPix.objects.filter(pago=False, data_expiracao__lte=agora).count()
+
+    # --- DADOS PARA O GRÁFICO (Fluxo de 7 dias) ---
+    vendas_diarias = CobrancaPix.objects.filter(
+        pago=True,
+        data_criacao__gte=sete_dias_atras
+    ).annotate(
+        dia=TruncDate('data_criacao')
+    ).values('dia').annotate(
+        total=Sum('passagem__valor')
+    ).order_by('dia')
+
+    # Formatando para o JavaScript (Listas de strings e números)
+    labels_grafico = [v['dia'].strftime("%d/%m") for v in vendas_diarias]
+    dados_grafico = [float(v['total']) for v in vendas_diarias]
+
+    context = {
+        'faturamento': faturamento,
+        'qtd_pagos': qtd_pagos,
+        'qtd_evasoes': qtd_evasoes,
+        'labels_grafico': labels_grafico,
+        'dados_grafico': dados_grafico,
+        'ultimas_evasoes': CobrancaPix.objects.filter(pago=False, data_expiracao__lte=agora).order_by(
+            '-data_expiracao')[:5]
+    }
+
+    return render(request, 'admin_dashboard.html', context)
+
+
+@login_required
+def relatorio_financeiro(request):
+    # Captura filtros da URL
+    status = request.GET.get('status')
+    placa = request.GET.get('placa')
+
+    pix_list = CobrancaPix.objects.select_related('passagem', 'passagem__categoria').all()
+
+    if status == 'pago':
+        pix_list = pix_list.filter(pago=True)
+    elif status == 'pendente':
+        pix_list = pix_list.filter(pago=False, data_expiracao__gt=timezone.now())
+    elif status == 'evasao':
+        pix_list = pix_list.filter(pago=False, data_expiracao__lte=timezone.now())
+
+    if placa:
+        pix_list = pix_list.filter(passagem__placa__icontains=placa.upper())
+
+    return render(request, 'relatorio_financeiro.html', {'pix_list': pix_list})
 
 
 @login_required

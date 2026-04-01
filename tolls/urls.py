@@ -5,4 +5,6 @@ urlpatterns = [
     path('cobranca-pix/', views.gerar_cobranca_pix, name='gerar_cobranca_pix'),
     path('listar-pix/', views.listar_pix, name='listar_pix'),
     path('consulta/', views.consulta_publica, name='consulta_publica'),
+    path('dashboard/', views.dashboard_gerencial, name='dashboard'),
+    path('relatorio/', views.relatorio_financeiro, name='relatorio_financeiro'),
 ]
