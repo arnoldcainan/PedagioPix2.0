@@ -162,12 +162,16 @@ def dashboard_gerencial(request):
 
 @login_required
 def relatorio_financeiro(request):
-    # Captura filtros da URL
+    # Captura os filtros da URL
     status = request.GET.get('status')
     placa = request.GET.get('placa')
+    data_inicial = request.GET.get('data_inicial')  # De
+    data_final = request.GET.get('data_final')  # Até
 
+    # Otimiza a query base
     pix_list = CobrancaPix.objects.select_related('passagem', 'passagem__categoria').all()
 
+    # Aplica o filtro de Status
     if status == 'pago':
         pix_list = pix_list.filter(pago=True)
     elif status == 'pendente':
@@ -175,8 +179,23 @@ def relatorio_financeiro(request):
     elif status == 'evasao':
         pix_list = pix_list.filter(pago=False, data_expiracao__lte=timezone.now())
 
+    # Aplica o filtro de Placa
     if placa:
         pix_list = pix_list.filter(passagem__placa__icontains=placa.upper())
+
+    # ==========================================
+    # LÓGICA DE FILTRO POR PERÍODO (RANGE DE DATA)
+    # ==========================================
+    if data_inicial:
+        # __date__gte = A data de criação deve ser Maior ou Igual (Greater Than or Equal) à data inicial
+        pix_list = pix_list.filter(data_criacao__date__gte=data_inicial)
+
+    if data_final:
+        # __date__lte = A data de criação deve ser Menor ou Igual (Less Than or Equal) à data final
+        pix_list = pix_list.filter(data_criacao__date__lte=data_final)
+
+    # Ordena para os mais recentes aparecerem primeiro
+    pix_list = pix_list.order_by('-data_criacao')
 
     return render(request, 'relatorio_financeiro.html', {'pix_list': pix_list})
 

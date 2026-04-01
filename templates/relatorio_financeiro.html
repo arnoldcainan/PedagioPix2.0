@@ -8,11 +8,22 @@
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label small fw-bold">Buscar Placa</label>
                 <input type="text" name="placa" class="form-control" placeholder="Ex: ABC1234" value="{{ request.GET.placa }}">
             </div>
-            <div class="col-md-4">
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">Data Inicial</label>
+                <input type="date" name="data_inicial" class="form-control" value="{{ request.GET.data_inicial }}">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold">Data Final</label>
+                <input type="date" name="data_final" class="form-control" value="{{ request.GET.data_final }}">
+            </div>
+
+            <div class="col-md-3">
                 <label class="form-label small fw-bold">Status</label>
                 <select name="status" class="form-select">
                     <option value="">Todos</option>
@@ -21,8 +32,9 @@
                     <option value="evasao" {% if request.GET.status == 'evasao' %}selected{% endif %}>Evasões (Expirados)</option>
                 </select>
             </div>
-            <div class="col-md-4 d-grid">
-                <button type="submit" class="btn btn-primary fw-bold">Filtrar Relatório</button>
+
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-primary fw-bold"><i class="fa-solid fa-filter me-2"></i> Filtrar</button>
             </div>
         </form>
     </div>
